@@ -1,0 +1,79 @@
+﻿@model SickDiary.Web.Models.RecordViewModel
+
+@{
+    ViewData["Title"] = "Add Daily Record";
+}
+
+<h1>Add Daily Record</h1>
+
+<form asp-action="CreateRecord" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="Date" class="control-label"></label>
+        <input asp-for="Date" class="form-control" type="date" />
+        <span asp-validation-for="Date" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="BloodGlucoseLevel" class="control-label"></label>
+        <input asp-for="BloodGlucoseLevel" class="form-control" type="number" step="0.1" />
+        <span asp-validation-for="BloodGlucoseLevel" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="InsulinDose" class="control-label"></label>
+        <input asp-for="InsulinDose" class="form-control" type="number" step="0.1" />
+        <span asp-validation-for="InsulinDose" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="CarbohydrateIntake" class="control-label"></label>
+        <input asp-for="CarbohydrateIntake" class="form-control" type="number" />
+        <span asp-validation-for="CarbohydrateIntake" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="WellBeingLevel" class="control-label"></label>
+        <select asp-for="WellBeingLevel" class="form-control" asp-items="Html.GetEnumSelectList<WellBeingLevel>()"></select>
+        <span asp-validation-for="WellBeingLevel" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="PhysicalActivityLevel" class="control-label"></label>
+        <select asp-for="PhysicalActivityLevel" class="form-control" asp-items="Html.GetEnumSelectList<PhysicalActivityLevel>()"></select>
+        <span asp-validation-for="PhysicalActivityLevel" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="Dizziness" class="form-check-input" type="checkbox" />
+        <label asp-for="Dizziness" class="form-check-label"></label>
+        <span asp-validation-for="Dizziness" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="Sweating" class="form-check-input" type="checkbox" />
+        <label asp-for="Sweating" class="form-check-label"></label>
+        <span asp-validation-for="Sweating" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="VisionProblems" class="form-check-input" type="checkbox" />
+        <label asp-for="VisionProblems" class="form-check-label"></label>
+        <span asp-validation-for="VisionProblems" class="text-danger"></span>
+    </div>
+
+    <div class="form-group form-check">
+        <input asp-for="Weakness" class="form-check-input" type="checkbox" />
+        <label asp-for="Weakness" class="form-check-label"></label>
+        <span asp-validation-for="Weakness" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Add Record" class="btn btn-primary" />
+    </div>
+</form>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}

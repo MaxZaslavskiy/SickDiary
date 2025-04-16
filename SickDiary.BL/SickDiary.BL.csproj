@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\SickDiary.DL\SickDiary.DL.csproj" />
+    </ItemGroup>
+
 </Project>
