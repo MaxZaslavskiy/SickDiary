@@ -1,25 +1,40 @@
 ﻿using MongoDB.Driver;
-using SickDiary.DL.Entities;
 using SickDiary.DL.Interfaces;
 
 namespace SickDiary.DL.Repositories;
 
-public class MongoRepository<T> : IMongoRepository<T> where T : BaseEntity
+public class MongoRepository<T> : IMongoRepository<T> where T : class
 {
     private readonly IMongoCollection<T> _collection;
-    public IMongoCollection<T> Collection
+
+    public MongoRepository(IMongoDatabase database)
     {
-        get => _collection;
+        var collectionName = typeof(T).Name;
+        _collection = database.GetCollection<T>(collectionName);
     }
 
-    public MongoRepository(IMongoDatabase  database)
+    public IMongoCollection<T> Collection => _collection;
+
+    public async Task AddAsync(T entity)
     {
-        _collection = database.GetCollection<T>(typeof(T).Name);
+        await _collection.InsertOneAsync(entity);
     }
 
-    public async Task<T> GetByIdAsync(int id)
+    public async Task UpdateAsync(T entity)
     {
-        return await _collection.Find(x => x.Id == id).FirstOrDefaultAsync();
+        var id = entity.GetType().GetProperty("Id")?.GetValue(entity)?.ToString();
+        if (string.IsNullOrEmpty(id))
+        {
+            throw new ArgumentException("Entity Id cannot be null or empty");
+        }
+
+        var filter = Builders<T>.Filter.Eq("Id", id);
+        await _collection.ReplaceOneAsync(filter, entity);
+    }
+
+    public async Task<T> GetByIdAsync(string id)
+    {
+        return await _collection.Find(Builders<T>.Filter.Eq("Id", id)).FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()
@@ -27,27 +42,8 @@ public class MongoRepository<T> : IMongoRepository<T> where T : BaseEntity
         return await _collection.Find(_ => true).ToListAsync();
     }
 
-    public async Task AddAsync(T entity)
+    public async Task DeleteAsync(string id)
     {
-        // Знаходимо максимальний Id у колекції
-        var maxId = (await _collection.Find(_ => true)
-            .SortByDescending(x => x.Id)
-            .FirstOrDefaultAsync())?.Id ?? 0;
-
-        // Присвоюємо новому об’єкту Id, який на 1 більший
-        entity.Id = maxId + 1;
-
-        // Вставляємо документ у колекцію
-        await _collection.InsertOneAsync(entity);
-    }
-
-    public async Task UpdateAsync(T entity)
-    {
-        await _collection.ReplaceOneAsync(x => x.Id == entity.Id, entity);
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        await _collection.DeleteOneAsync(x => x.Id == id);
+        await _collection.DeleteOneAsync(Builders<T>.Filter.Eq("Id", id));
     }
 }

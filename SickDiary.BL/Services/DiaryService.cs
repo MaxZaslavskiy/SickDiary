@@ -15,7 +15,7 @@ public class DiaryService
         _clientRepository = clientRepository;
     }
 
-    public async Task AddRecordAsync(int userId, Record record)
+    public async Task AddRecordAsync(string userId, Record record)
     {
         // Перевіряємо, чи існує користувач
         var client = await _clientRepository.GetByIdAsync(userId);
@@ -47,8 +47,60 @@ public class DiaryService
         await _diaryRepository.UpdateAsync(diary);
     }
 
-    public async Task<Diary> GetDiaryByUserIdAsync(int userId)
+    //Додали UpdateRecordAsync, який замінює запис за індексом у списку Records.
+    public async Task UpdateRecordAsync(string userId, int recordIndex, Record updatedRecord)
     {
+        var client = await _clientRepository.GetByIdAsync(userId);
+        if (client == null)
+        {
+            throw new ApplicationException("User not found.");
+        }
+
+        var diary = await _diaryRepository.Collection
+            .Find(d => d.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        if (diary == null || recordIndex < 0 || recordIndex >= diary.Records.Count)
+        {
+            throw new ApplicationException("Record not found");
+        }
+
+        // Оновлюємо запис у щоденнику
+        diary.Records[recordIndex] = updatedRecord;
+
+        await _diaryRepository.UpdateAsync(diary);
+    }
+
+    // Додали DeleteRecordAsync, який видаляє запис за індексом із списку Records.
+    public async Task DeleteRecordAsync(string userId, int recordIndex)
+    {
+        var client = await _clientRepository.GetByIdAsync(userId);
+        if (client == null)
+        {
+            throw new ApplicationException("User not found.");
+        }
+
+        var diary = await _diaryRepository.Collection
+            .Find(d => d.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        if (diary == null || recordIndex < 0 || recordIndex >=diary.Records.Count)
+        {
+            throw new ApplicationException("Record not found.");
+        }
+
+        diary.Records.RemoveAt(recordIndex);
+
+        await _diaryRepository.UpdateAsync(diary);
+    }
+    public async Task<Diary> GetDiaryByUserIdAsync(string userId)
+    {
+        var client = await _clientRepository.GetByIdAsync(userId);
+        if (client == null)
+        {
+            throw new ApplicationException("User not found.");
+        }
+
         return await _diaryRepository.Collection
             .Find(d => d.UserId == userId)
             .FirstOrDefaultAsync();

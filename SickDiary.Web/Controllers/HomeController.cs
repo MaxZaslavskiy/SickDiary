@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SickDiary.BL.Services;
 using SickDiary.Web.Models;
+using Microsoft.AspNetCore.Http;
 
 namespace SickDiary.Web.Controllers;
 
@@ -61,9 +62,9 @@ public class HomeController : Controller
 
         try
         {
-            var client = await _service.Login(model.Login, model.Password);
-            // Тут можна додати логіку авторизації (наприклад, зберегти користувача в сесії)
-            return RedirectToAction("Index");
+            var client = await _service.Login(model.Login, model.Password, HttpContext.Session);
+            _logger.LogInformation("User logged in: {Login}", client.Login);
+            return RedirectToAction("Index", "Diary"); // Перенаправляємо на My Diary
         }
         catch (Exception ex)
         {
@@ -72,6 +73,12 @@ public class HomeController : Controller
         }
     }
 
+    public IActionResult Logout()
+    {
+        HttpContext.Session.Clear();
+        return RedirectToAction("Index");
+    }
+
     public IActionResult Privacy()
     {
         return View();
@@ -83,62 +90,3 @@ public class HomeController : Controller
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }
-
-
-
-
-
-
-
-/*public class HomeController : Controller
-{
-    private readonly ILogger<HomeController> _logger;
-    private readonly ClientService _service;
-
-    public HomeController(ILogger<HomeController> logger, ClientService service)
-    {
-        _logger = logger;
-        _service = service;
-    }
-
-
-    public async Task<IActionResult> Index()
-    {
-        try
-        {
-            var reg = await _service.SignUp("123", "123123", "Maxim Pushka");
-            _logger.LogInformation("User registered: {Login}", reg.Login);
-
-            var client = await _service.Login("123", "123123");
-            _logger.LogInformation("User logged in: {Login}", client.Login);
-
-            return View();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error in Index action");
-            return View("Error");
-        }
-    }
-
----------------------------------------------------------------------
-    /*public async Task<IActionResult> Index()
-    {
-        var reg = await _service.SignUp("123", "123123", "Maxim Pushka");
-        var client = await _service.Login("123", "123123");
-        return View();
-    }
------------------------------------------------------------------
-    
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-    }
-}
-*/

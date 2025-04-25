@@ -5,18 +5,12 @@ namespace SickDiary.DL.Entities;
 public class Client : BaseEntity
 {
     [BsonElement("login")]
-    public string Login { get; set; }
-    
+    public string Login { get; set; } = string.Empty;
+
     [BsonElement("pass")]
-    public string Pass { get; set; }
-    
+    public string Pass { get; set; } = string.Empty;
+
     [BsonElement("fullName")]
-    public string FullName { get; set; }
-    
-    [BsonElement("disease")]
-    public string Disease  { get; set; }
-    
-    [BsonElement("aboutDiseaseState")]
-    [BsonIgnoreIfNull]
-    public string? AboutDiseaseState { get; set; }
+    public string FullName { get; set; } = string.Empty;
+
 }

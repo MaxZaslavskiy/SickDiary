@@ -5,6 +5,7 @@ namespace SickDiary.Web.Models
     public class RecordViewModel
     {
 
+        public int Index { get; set; } // Додаємо поле для індексу
         public double BloodGlucoseLevel { get; set; }
 
         public double InsulinDose {  get; set; }
@@ -24,6 +25,8 @@ namespace SickDiary.Web.Models
         public bool Weakness { get; set; }
 
         public DateTime Date { get; set; } = DateTime.Now; // За замовчуванням сьогоднішня дата
+
+        public DiseaseState Result { get; set; }
     }
 
     public enum WellBeingLevel
@@ -42,4 +45,13 @@ namespace SickDiary.Web.Models
         High = 2
     }
 
+    public enum DiseaseState
+    {
+        Critical = 0,
+        Warn = 1, 
+        Normal = 2,
+        Good = 3,
+        VeryGood = 4
+        
+    }
 }
