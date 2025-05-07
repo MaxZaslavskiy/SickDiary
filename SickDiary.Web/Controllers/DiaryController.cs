@@ -12,9 +12,7 @@ public class DiaryController : Controller
     private readonly ClientService _clientService;
     private readonly GptService _gptService;
 
-    public DiaryController(DiaryService diaryService,
-        ClientService clientService,
-        GptService gptService)
+    public DiaryController(DiaryService diaryService, ClientService clientService, GptService gptService)
     {
         _diaryService = diaryService;
         _clientService = clientService;
@@ -35,25 +33,27 @@ public class DiaryController : Controller
 
         if (diary != null && diary.Records.Any())
         {
-            model.Records = diary.Records.Select((r, index) => new RecordViewModel
-            {
-                Date = r.Date,
-                BloodGlucoseLevel = r.BloodGlucoseLevel,
-                InsulinDose = r.InsulinDose,
-                CarbohydrateIntake = r.CarbohydrateIntake,
-                WellBeingLevel = (SickDiary.Web.Models.WellBeingLevel)r.WellBeingLevel,
-                PhysicalActivityLevel = (SickDiary.Web.Models.PhysicalActivityLevel)r.PhysicalActivityLevel,
-                Dizziness = r.Dizziness,
-                Sweating = r.Sweating,
-                VisionProblems = r.VisionProblems,
-                Weakness = r.Weakness,
-                Result = (SickDiary.Web.Models.DiseaseState)r.Result,
-                Index = index // Додаємо індекс для редагування / видалення
-            }).ToList();
+            model.Records = diary.Records
+                .OrderByDescending(r => r.Date) // Сортування за датою і часом у порядку спадання
+                .Select((r, index) => new RecordViewModel
+                {
+                    Date = r.Date.ToLocalTime(), // Конвертуємо UTC у локальний час для відображення
+                    BloodGlucoseLevel = r.BloodGlucoseLevel,
+                    InsulinDose = r.InsulinDose,
+                    CarbohydrateIntake = r.CarbohydrateIntake,
+                    WellBeingLevel = (SickDiary.Web.Models.WellBeingLevel)r.WellBeingLevel,
+                    PhysicalActivityLevel = (SickDiary.Web.Models.PhysicalActivityLevel)r.PhysicalActivityLevel,
+                    Dizziness = r.Dizziness,
+                    Sweating = r.Sweating,
+                    VisionProblems = r.VisionProblems,
+                    Weakness = r.Weakness,
+                    MeasurementState = (SickDiary.Web.Models.MeasurementState)r.MeasurementState,
+                    Result = (SickDiary.Web.Models.DiseaseState)r.Result,
+                    Index = index
+                }).ToList();
         }
 
         return View(model);
-
     }
 
     [AuthorizeUser]
@@ -74,44 +74,51 @@ public class DiaryController : Controller
 
         try
         {
+            // Передаємо записи як є, вони вже в UTC
             string analysis = await _gptService.Analyze(diary.Records);
             TempData["Analysis"] = analysis;
         }
-
         catch (Exception ex)
         {
-            TempData["Error"] = $"Error during analysis: {ex.Message}";
+            TempData["Error"] = $"Analysis failed: {ex.Message}";
         }
 
         return RedirectToAction("Index");
     }
 
-
-    [AuthorizeUser] // Додаємо захист
+    [AuthorizeUser]
     public IActionResult CreateRecord()
     {
         return View(new RecordViewModel { Date = DateTime.Now });
     }
 
     [HttpPost]
-    [AuthorizeUser] // Додаємо захист
-    public async Task<IActionResult> CreateRecord(RecordViewModel model)
+    [AuthorizeUser]
+    public async Task<IActionResult> CreateRecord(RecordViewModel model, string Time)
     {
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        // Отримуємо UserId з сесії
         var userId = HttpContext.Session.GetString("UserId");
         if (string.IsNullOrEmpty(userId))
         {
             return RedirectToAction("Login", "Home");
         }
 
+        // Об'єднуємо дату і час, інтерпретуємо як локальний час
+        if (TimeSpan.TryParse(Time, out var timeOfDay))
+        {
+            model.Date = model.Date.Date + timeOfDay;
+        }
+
+        // Конвертуємо локальний час у UTC перед збереженням
+        var utcDate = model.Date.ToUniversalTime();
+
         var record = new Record
         {
-            Date = model.Date,
+            Date = utcDate, // Зберігаємо в UTC
             BloodGlucoseLevel = model.BloodGlucoseLevel,
             InsulinDose = model.InsulinDose,
             CarbohydrateIntake = model.CarbohydrateIntake,
@@ -121,7 +128,8 @@ public class DiaryController : Controller
             Sweating = model.Sweating,
             VisionProblems = model.VisionProblems,
             Weakness = model.Weakness,
-            Result = (SickDiary.DL.Entities.DiseaseState)model.Result // Поки що фіксоване значення, пізніше можна додати логіку
+            MeasurementState = (SickDiary.DL.Entities.MeasurementState)model.MeasurementState,
+            Result = SickDiary.DL.Entities.DiseaseState.Normal // Початкове значення, буде перераховано у DiaryService
         };
 
         try
@@ -136,7 +144,7 @@ public class DiaryController : Controller
         }
     }
 
-    [AuthorizeUser] // Додаємо захист
+    [AuthorizeUser]
     public async Task<IActionResult> EditRecord(int index)
     {
         var userId = HttpContext.Session.GetString("UserId");
@@ -146,17 +154,23 @@ public class DiaryController : Controller
         }
 
         var diary = await _diaryService.GetDiaryByUserIdAsync(userId);
-        if (diary == null || index < 0 || index >= diary.Records.Count)
+        if (diary == null)
         {
             return NotFound();
         }
 
-        var record = diary.Records[index];
+        // Сортуємо записи так само, як у Index
+        var sortedRecords = diary.Records.OrderByDescending(r => r.Date).ToList();
+        if (index < 0 || index >= sortedRecords.Count)
+        {
+            return NotFound();
+        }
+
+        var record = sortedRecords[index];
         var model = new RecordViewModel
         {
-
             Index = index,
-            Date = record.Date,
+            Date = record.Date.ToLocalTime(), // Конвертуємо UTC у локальний час для редагування
             BloodGlucoseLevel = record.BloodGlucoseLevel,
             InsulinDose = record.InsulinDose,
             CarbohydrateIntake = record.CarbohydrateIntake,
@@ -166,20 +180,19 @@ public class DiaryController : Controller
             Sweating = record.Sweating,
             VisionProblems = record.VisionProblems,
             Weakness = record.Weakness,
+            MeasurementState = (SickDiary.Web.Models.MeasurementState)record.MeasurementState,
             Result = (SickDiary.Web.Models.DiseaseState)record.Result
-
         };
 
         return View(model);
     }
 
     [HttpPost]
-    [AuthorizeUser] // Додаємо захист
-    public async Task<IActionResult> EditRecord(int index, RecordViewModel model)
+    [AuthorizeUser]
+    public async Task<IActionResult> EditRecord(int index, RecordViewModel model, string Time)
     {
         if (!ModelState.IsValid)
         {
-            model.Index = index;
             return View(model);
         }
 
@@ -189,9 +202,18 @@ public class DiaryController : Controller
             return RedirectToAction("Login", "Home");
         }
 
+        // Об'єднуємо дату і час, інтерпретуємо як локальний час
+        if (TimeSpan.TryParse(Time, out var timeOfDay))
+        {
+            model.Date = model.Date.Date + timeOfDay;
+        }
+
+        // Конвертуємо локальний час у UTC перед збереженням
+        var utcDate = model.Date.ToUniversalTime();
+
         var record = new Record
         {
-            Date = model.Date,
+            Date = utcDate, // Зберігаємо в UTC
             BloodGlucoseLevel = model.BloodGlucoseLevel,
             InsulinDose = model.InsulinDose,
             CarbohydrateIntake = model.CarbohydrateIntake,
@@ -201,7 +223,8 @@ public class DiaryController : Controller
             Sweating = model.Sweating,
             VisionProblems = model.VisionProblems,
             Weakness = model.Weakness,
-            Result = (SickDiary.DL.Entities.DiseaseState)model.Result
+            MeasurementState = (SickDiary.DL.Entities.MeasurementState)model.MeasurementState,
+            Result = SickDiary.DL.Entities.DiseaseState.Normal // Початкове значення, буде перераховано у DiaryService
         };
 
         try
@@ -209,19 +232,14 @@ public class DiaryController : Controller
             await _diaryService.UpdateRecordAsync(userId, index, record);
             return RedirectToAction("Index", "Diary");
         }
-
         catch (Exception ex)
         {
             ModelState.AddModelError("", ex.Message);
-            model.Index = index;
             return View(model);
         }
     }
 
-
-    // Додали дію DeleteRecord, яка видаляє запис за індексом.
-
-    [AuthorizeUser] // Додаємо захист
+    [AuthorizeUser]
     public async Task<IActionResult> DeleteRecord(int index)
     {
         var userId = HttpContext.Session.GetString("UserId");
@@ -232,7 +250,27 @@ public class DiaryController : Controller
 
         try
         {
-            await _diaryService.DeleteRecordAsync(userId, index);
+            var diary = await _diaryService.GetDiaryByUserIdAsync(userId);
+            if (diary == null)
+            {
+                throw new ApplicationException("Diary not found.");
+            }
+
+            // Сортуємо записи так само, як у Index
+            var sortedRecords = diary.Records.OrderByDescending(r => r.Date).ToList();
+            if (index < 0 || index >= sortedRecords.Count)
+            {
+                throw new ApplicationException("Record not found.");
+            }
+
+            // Знаходимо індекс запису у несортованому списку
+            var originalIndex = diary.Records.IndexOf(sortedRecords[index]);
+            if (originalIndex == -1)
+            {
+                throw new ApplicationException("Record not found in original list.");
+            }
+
+            await _diaryService.DeleteRecordAsync(userId, originalIndex);
             return RedirectToAction("Index");
         }
         catch (Exception ex)
@@ -240,6 +278,36 @@ public class DiaryController : Controller
             TempData["Error"] = ex.Message;
             return RedirectToAction("Index");
         }
+    }
+
+    // Цей метод отримує записи щоденника, сортує їх за датою і передає дані в модель.
+    [AuthorizeUser]
+    [AuthorizeUser]
+    public async Task<IActionResult> Charts()
+    {
+        var userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
+        {
+            return RedirectToAction("Login", "Home");
+        }
+
+        var diary = await _diaryService.GetDiaryByUserIdAsync(userId);
+        var model = new ChartDataViewModel();
+
+        if (diary != null && diary.Records.Any())
+        {
+            var sortedRecords = diary.Records.OrderBy(r => r.Date).ToList(); // Зміна на OrderBy
+            model.Labels = sortedRecords.Select(r => r.Date.ToLocalTime()).ToList();
+            model.BloodGlucoseLevels = sortedRecords.Select(r => r.BloodGlucoseLevel).ToList();
+            model.InsulinDoses = sortedRecords.Select(r => r.InsulinDose).ToList();
+            Console.WriteLine($"Records found: {sortedRecords.Count}");
+        }
+        else
+        {
+            Console.WriteLine("No records found for user.");
+        }
+
+        return View(model);
     }
 
 }

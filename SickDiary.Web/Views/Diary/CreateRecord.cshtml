@@ -10,9 +10,14 @@
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
     <div class="form-group">
-        <label asp-for="Date" class="control-label"></label>
-        <input asp-for="Date" class="form-control" type="date" />
+        <label asp-for="Date" class="control-label">Date</label>
+        <input asp-for="Date" class="form-control" type="date" value="@Model.Date.ToString("yyyy-MM-dd")" />
         <span asp-validation-for="Date" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label class="control-label">Time</label>
+        <input name="Time" class="form-control" type="time" value="@Model.Date.ToString("HH:mm")" />
     </div>
 
     <div class="form-group">
@@ -43,6 +48,12 @@
         <label asp-for="PhysicalActivityLevel" class="control-label"></label>
         <select asp-for="PhysicalActivityLevel" class="form-control" asp-items="Html.GetEnumSelectList<SickDiary.Web.Models.PhysicalActivityLevel>()"></select>
         <span asp-validation-for="PhysicalActivityLevel" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="MeasurementState" class="control-label"></label>
+        <select asp-for="MeasurementState" class="form-control" asp-items="Html.GetEnumSelectList<SickDiary.Web.Models.MeasurementState>()"></select>
+        <span asp-validation-for="MeasurementState" class="text-danger"></span>
     </div>
 
     <div class="form-group form-check">

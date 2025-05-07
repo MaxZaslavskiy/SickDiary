@@ -31,21 +31,41 @@ public class GptService
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
         var recentRecords = records.OrderByDescending(r => r.Date).Take(10).ToList();
-        string recordsJson = JsonSerializer.Serialize(recentRecords, new JsonSerializerOptions { WriteIndented = true });
+        var recordsForJson = recentRecords.Select(r => new
+        {
+            Date = r.Date.ToLocalTime(),
+            r.BloodGlucoseLevel,
+            r.InsulinDose,
+            r.CarbohydrateIntake,
+            r.WellBeingLevel,
+            r.PhysicalActivityLevel,
+            r.Dizziness,
+            r.Sweating,
+            r.VisionProblems,
+            r.Weakness,
+            r.MeasurementState,
+            r.Result
+        });
+        string recordsJson = JsonSerializer.Serialize(recordsForJson, new JsonSerializerOptions { WriteIndented = true });
 
         string prompt = $@"
-            
-            Я спостерігаю за хворим на цукровий діабет 1 типу. Нижче наведені останні щоденникові записи.
-            Кожен запис містить дату, рівень глюкози в крові (ммоль/л), дозу інсуліну (одиниці), споживання вуглеводів (грами),
-            самопочуття (дуже погане до дуже добре), фізична активність (низька, нормальна, висока), а також симптоми: запаморочення, пітливість, проблеми із зором, слабкість.
+            I am monitoring a patient with Type 1 Diabetes. Below are recent diary entries.
+            Each record includes date and time (local time), blood glucose level (mmol/L), insulin dose (units), carbohydrate intake (grams),
+            well-being (VeryBad to VeryGood), physical activity (Low, Normal, High), measurement state (Fasting or Postprandial),
+            and symptoms: dizziness, sweating, vision problems, weakness.
 
-            Будь ласка:
-            - Аналізуйте тенденції рівня глюкози та інсуліну
-            - Визначити ознаки гіпоглікемії або гіперглікемії
-            - Дай відкриту та широку рекомендацію, що робити при моїх результах, чи потрібно вжити вуглеводів, чи потрібно вколоти інсулін чи ще щось. Дай відкриту відповідь.
+            Please:
+            - Analyze trends in glucose levels, considering whether the measurements were taken fasting or postprandial (Fasting: normal 3.9–7.2 mmol/L, Postprandial: normal 5.0–10.0 mmol/L)
+            - Evaluate insulin doses in relation to carbohydrate intake (e.g., insufficient insulin for high carb intake may cause hyperglycemia)
+            - Consider physical activity: high activity may lower glucose levels, increasing the risk of hypoglycemia
+            - Take into account well-being: poor well-being (Bad or VeryBad) may indicate underlying issues
+            - Assess symptoms: multiple symptoms (dizziness, sweating, etc.) may indicate acute conditions like hypoglycemia or hyperglycemia
+            - Provide suggestions for improvement or medical attention
 
-            Ось записи:
+            виводь результат українською
 
+
+            Here are the records:
             ```json
             {recordsJson}
             ```";
@@ -57,7 +77,7 @@ public class GptService
             {
                 new { role = "user", content = prompt }
             },
-            max_tokens = 500
+            max_tokens = 1500
         };
 
         try
@@ -75,7 +95,40 @@ public class GptService
                     .GetProperty("content")
                     .GetString();
 
-                return reply ?? "No analysis provided.";
+                if (string.IsNullOrEmpty(reply))
+                {
+                    return "No analysis provided.";
+                }
+
+                // Форматуємо текст як HTML із секціями та списками
+                var sections = reply.Split("---", StringSplitOptions.RemoveEmptyEntries);
+                var formattedAnalysis = new StringBuilder();
+
+                foreach (var section in sections)
+                {
+                    var lines = section.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                    if (lines.Length == 0) continue;
+
+                    // Перший рядок секції — заголовок
+                    var sectionTitle = lines[0].Trim();
+                    formattedAnalysis.AppendLine($"<div class='analysis-section'><h5>{sectionTitle}</h5><ul>");
+                    for (int i = 1; i < lines.Length; i++)
+                    {
+                        var line = lines[i].Trim();
+                        if (line.StartsWith("-"))
+                        {
+                            var text = line.Substring(1).Trim();
+                            formattedAnalysis.AppendLine($"<li>{text}</li>");
+                        }
+                        else
+                        {
+                            formattedAnalysis.AppendLine($"<li>{line}</li>");
+                        }
+                    }
+                    formattedAnalysis.AppendLine("</ul></div>");
+                }
+
+                return formattedAnalysis.ToString();
             }
             else
             {

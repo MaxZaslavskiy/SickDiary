@@ -1,0 +1,153 @@
+﻿@using System.Globalization
+@model SickDiary.Web.Models.ChartDataViewModel
+
+@{
+    ViewData["Title"] = "Health Charts";
+    // Встановлюємо культуру для сторінки
+    CultureInfo.CurrentCulture = new CultureInfo("uk-UA");
+    CultureInfo.CurrentUICulture = new CultureInfo("uk-UA");
+}
+
+<h1>Health Charts</h1>
+
+<style>
+    .chart-container {
+        max-width: 600px; /* Обмежуємо максимальну ширину */
+        margin: 0 auto; /* Центруємо контейнер */
+        position: relative;
+        height: 350px; /* Фіксована висота контейнера */
+    }
+</style>
+
+@if (!Model.Labels.Any())
+{
+    <p>No records available to display charts.</p>
+    <a asp-action="CreateRecord" asp-controller="Diary" class="btn btn-primary">Add Record</a>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Blood Glucose Levels</h3>
+            <div class="chart-container">
+                <canvas id="glucoseChart"></canvas>
+            </div>
+            <p>Average: @(Model.BloodGlucoseLevels.Average().ToString("F2")) mmol/L</p>
+        </div>
+        <div class="col-md-6">
+            <h3>Insulin Doses</h3>
+            <div class="chart-container">
+                <canvas id="insulinChart"></canvas>
+            </div>
+            <p>Average: @(Model.InsulinDoses.Average().ToString("F2")) units</p>
+        </div>
+    </div>
+
+    @section Scripts {
+    <script>
+        console.log('Labels:', @Html.Raw(Json.Serialize(Model.Labels.Select(d => d.ToString("MMM dd HH:mm", new CultureInfo("uk-UA"))))));
+        console.log('Glucose:', @Html.Raw(Json.Serialize(Model.BloodGlucoseLevels)));
+        console.log('Insulin:', @Html.Raw(Json.Serialize(Model.InsulinDoses)));
+
+        const glucoseData = {
+            labels: @Html.Raw(Json.Serialize(Model.Labels.Select(d => d.ToString("MMM dd HH:mm", new CultureInfo("uk-UA"))))),
+            datasets: [{
+                label: 'Blood Glucose Level (mmol/L)',
+                data: @Html.Raw(Json.Serialize(Model.BloodGlucoseLevels)),
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        };
+
+        const insulinData = {
+            labels: @Html.Raw(Json.Serialize(Model.Labels.Select(d => d.ToString("MMM dd HH:mm", new CultureInfo("uk-UA"))))),
+            datasets: [{
+                label: 'Insulin Dose (units)',
+                data: @Html.Raw(Json.Serialize(Model.InsulinDoses)),
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        };
+
+        new Chart(document.getElementById('glucoseChart'), {
+            type: 'line',
+            data: glucoseData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Дата і час'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'ммоль/л'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('insulinChart'), {
+            type: 'line',
+            data: insulinData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Дата і час'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            maxTicksLimit: 10
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Одиниці'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            }
+        });
+    </script>
+    }
+}

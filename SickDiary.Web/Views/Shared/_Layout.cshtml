@@ -41,6 +41,9 @@
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Diary" asp-action="CreateRecord">Add Record</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Diary" asp-action="Charts">Charts</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Logout">Logout</a>
                             </li>
                         }
@@ -66,6 +69,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

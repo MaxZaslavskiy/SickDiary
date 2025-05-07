@@ -1,9 +1,11 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 
 namespace SickDiary.DL.Entities;
 
 public class Record
 {
+
     [BsonElement("date")]
     public DateTime Date { get; set; }
 
@@ -34,6 +36,9 @@ public class Record
     [BsonElement("weakness")]
     public bool Weakness { get; set; } // Слабкість
 
+    [BsonElement("measurementState")]
+    public MeasurementState MeasurementState { get; set; }
+
     [BsonElement("result")]
     public DiseaseState Result { get; set; } // Загальний стан (може визначатися автоматично)
 }
@@ -61,4 +66,10 @@ public enum DiseaseState
     Normal = 2,
     Good = 3,
     VeryGood = 4
+}
+
+public enum MeasurementState
+{
+    Fasting = 0,      // Натщесерце
+    Postprandial = 1  // Після їжі
 }

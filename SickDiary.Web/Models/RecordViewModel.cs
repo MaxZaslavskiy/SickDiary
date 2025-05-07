@@ -26,6 +26,7 @@ namespace SickDiary.Web.Models
 
         public DateTime Date { get; set; } = DateTime.Now; // За замовчуванням сьогоднішня дата
 
+        public MeasurementState MeasurementState { get; set; } // Нове поле
         public DiseaseState Result { get; set; }
     }
 
@@ -53,5 +54,11 @@ namespace SickDiary.Web.Models
         Good = 3,
         VeryGood = 4
         
+    }
+
+    public enum MeasurementState
+    {
+        Fasting = 0,
+        Postprandial = 1
     }
 }

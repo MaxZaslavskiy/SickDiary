@@ -11,6 +11,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.3.0" />
       <PackageReference Include="MongoDB.Driver" Version="3.3.0" />
+      <PackageReference Include="System.Globalization" Version="4.3.0" />
     </ItemGroup>
 
     <ItemGroup>

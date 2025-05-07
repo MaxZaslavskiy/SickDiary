@@ -17,8 +17,8 @@
 @if (!string.IsNullOrEmpty(analysis))
 {
     <div class="alert alert-info">
-        <h4>Analysis:</h4>
-        <pre>@analysis</pre>
+        <h4>Аналіз:</h4>
+        <div class="analysis-content">@Html.Raw(analysis)</div>
     </div>
 }
 
@@ -27,27 +27,29 @@
     <table class="table table-bordered table-striped">
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Blood Glucose (mmol/L)</th>
-                <th>Insulin Dose (units)</th>
-                <th>Carbohydrates (g)</th>
-                <th>Well-Being</th>
-                <th>Physical Activity</th>
-                <th>Symptoms</th>
-                <th>Result</th>
-                <th>Actions</th>
+                <th>Дата і час</th>
+                <th>Рівень глюкози (ммоль/л)</th>
+                <th>Доза інсуліну (одиниці)</th>
+                <th>Вуглеводи (г)</th>
+                <th>Самопочуття</th>
+                <th>Фізична активність</th>
+                <th>Стан вимірювання</th>
+                <th>Симптоми</th>
+                <th>Результат</th>
+                <th class="actions-column">Дії</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var record in Model.Records)
             {
                 <tr>
-                    <td>@record.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@record.Date.ToString("yyyy-MM-dd HH:mm")</td>
                     <td>@record.BloodGlucoseLevel</td>
                     <td>@record.InsulinDose</td>
                     <td>@record.CarbohydrateIntake</td>
                     <td>@record.WellBeingLevel</td>
                     <td>@record.PhysicalActivityLevel</td>
+                    <td>@record.MeasurementState</td>
                     <td>
                         @(record.Dizziness ? "Dizziness, " : "")
                         @(record.Sweating ? "Sweating, " : "")
@@ -69,6 +71,59 @@
     </table>
 
     <a asp-action="Analyze" class="btn btn-info">Analyze Data</a>
+
+    <style>
+        .actions-column {
+            min-width: 150px;
+            white-space: nowrap;
+        }
+
+            .actions-column .btn {
+                margin-right: 5px;
+            }
+
+                .actions-column .btn:last-child {
+                    margin-right: 0;
+                }
+
+        .alert-info {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .analysis-content {
+            word-wrap: break-word;
+            white-space: normal;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .analysis-section {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #17a2b8;
+            border-radius: 5px;
+        }
+
+            .analysis-section h5 {
+                margin-top: 0;
+                margin-bottom: 10px;
+                font-weight: bold;
+                color: #17a2b8;
+            }
+
+            .analysis-section ul {
+                padding-left: 0; /* Прибираємо відступ зліва */
+                margin-bottom: 0;
+                list-style: none; /* Прибираємо крапки (маркери) */
+            }
+
+            .analysis-section li {
+                margin-bottom: 8px;
+                color: #333;
+            }
+    </style>
 }
 else
 {
